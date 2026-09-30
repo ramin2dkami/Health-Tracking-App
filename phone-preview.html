@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Health Diary – Phone Preview</title>
+    <!--
+      Dev-only preview: open http://localhost:5174/phone-preview.html while `npm run dev` is running.
+      Served from the same origin as the app so the iframe sees the same IndexedDB diary.
+    -->
+    <style>
+      :root {
+        --bg: #e9e2d2;
+        --ink: #141414;
+        --muted: #7a7466;
+        --bezel: #111;
+        --screen-w: 390px;
+        --screen-h: 844px;
+        --status-h: 50px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+      }
+
+      body {
+        background: radial-gradient(circle at 30% 20%, #f5efe2, var(--bg) 60%);
+        font: 14px/1.4 'DM Sans', system-ui, -apple-system, sans-serif;
+        color: var(--ink);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+
+      .toolbar {
+        position: fixed;
+        top: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 8px;
+        z-index: 2;
+      }
+
+      .toolbar button {
+        border: none;
+        border-radius: 999px;
+        padding: 8px 14px;
+        background: rgba(20, 20, 20, 0.08);
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .toolbar button:hover {
+        background: rgba(20, 20, 20, 0.14);
+      }
+
+      .stage {
+        transform-origin: center center;
+      }
+
+      .phone {
+        position: relative;
+        width: calc(var(--screen-w) + 28px);
+        height: calc(var(--screen-h) + 28px);
+        padding: 14px;
+        border-radius: 68px;
+        background: var(--bezel);
+        box-shadow:
+          0 0 0 2px #2c2c2c,
+          0 0 0 5px #0a0a0a,
+          0 40px 80px rgba(20, 20, 20, 0.35);
+      }
+
+      /* Side buttons */
+      .phone::before,
+      .phone::after {
+        content: '';
+        position: absolute;
+        width: 4px;
+        border-radius: 2px;
+        background: #0a0a0a;
+      }
+
+      .phone::before {
+        left: -8px;
+        top: 180px;
+        height: 64px;
+        box-shadow: 0 84px 0 #0a0a0a;
+      }
+
+      .phone::after {
+        right: -8px;
+        top: 220px;
+        height: 100px;
+      }
+
+      .screen {
+        position: relative;
+        width: var(--screen-w);
+        height: var(--screen-h);
+        border-radius: 54px;
+        overflow: hidden;
+        background: #f5efe2;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .status {
+        flex: 0 0 var(--status-h);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 34px 0 42px;
+        font-size: 16px;
+        font-weight: 700;
+        background: #f5efe2;
+      }
+
+      .status__icons {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .island {
+        position: absolute;
+        top: 11px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 124px;
+        height: 36px;
+        border-radius: 20px;
+        background: #000;
+        z-index: 1;
+      }
+
+      iframe {
+        flex: 1;
+        width: 100%;
+        border: 0;
+        display: block;
+        background: #f5efe2;
+      }
+
+      .home-bar {
+        position: absolute;
+        bottom: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 134px;
+        height: 5px;
+        border-radius: 3px;
+        background: rgba(20, 20, 20, 0.85);
+        pointer-events: none;
+        z-index: 1;
+      }
+
+      .caption {
+        margin-top: 22px;
+        color: var(--muted);
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="toolbar">
+      <button type="button" data-route="#/">Home</button>
+      <button type="button" data-route="#/log">Log</button>
+      <button type="button" data-route="#/calendar">Trends</button>
+      <button type="button" data-route="#/manage">Manage</button>
+      <button type="button" id="reload">Reload</button>
+    </div>
+
+    <div class="stage" id="stage">
+      <div class="phone">
+        <div class="screen">
+          <div class="island"></div>
+          <div class="status">
+            <span id="clock">9:41</span>
+            <span class="status__icons" aria-hidden="true">
+              <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" /><rect x="5" y="5.5" width="3" height="6.5" rx="1" /><rect x="10" y="3" width="3" height="9" rx="1" /><rect x="15" y="0" width="3" height="12" rx="1" /></svg>
+              <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 11.5 5.6 9a3.4 3.4 0 0 1 4.8 0zM3.4 6.8a6.5 6.5 0 0 1 9.2 0l-1.2 1.2a4.8 4.8 0 0 0-6.8 0zM1 4.4a9.9 9.9 0 0 1 14 0l-1.2 1.2a8.2 8.2 0 0 0-11.6 0z" /></svg>
+              <svg width="27" height="13" viewBox="0 0 27 13"><rect x="0.5" y="0.5" width="23" height="12" rx="3.5" fill="none" stroke="currentColor" opacity="0.4" /><rect x="2" y="2" width="18" height="9" rx="2" /><rect x="24.5" y="4.5" width="1.5" height="4" rx="0.75" opacity="0.4" /></svg>
+            </span>
+          </div>
+          <iframe id="app" src="/#/" title="Health Diary app"></iframe>
+          <div class="home-bar"></div>
+        </div>
+      </div>
+    </div>
+
+    <p class="caption">iPhone 15 · 390 × 844</p>
+
+    <script>
+      const frame = document.getElementById('app');
+      const stage = document.getElementById('stage');
+
+      document.querySelectorAll('[data-route]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          frame.contentWindow.location.hash = btn.dataset.route;
+        });
+      });
+      document.getElementById('reload').addEventListener('click', () => frame.contentWindow.location.reload());
+
+      // Shrink the phone to fit short windows, never enlarge it.
+      function fit() {
+        const phoneH = 844 + 28 + 10;
+        const available = window.innerHeight - 140;
+        const scale = Math.min(1, available / phoneH, (window.innerWidth - 32) / (390 + 40));
+        stage.style.transform = `scale(${scale})`;
+        stage.style.margin = `${((scale - 1) * phoneH) / 2}px 0`;
+      }
+      window.addEventListener('resize', fit);
+      fit();
+
+      function tick() {
+        const now = new Date();
+        document.getElementById('clock').textContent = `${now.getHours() % 12 || 12}:${String(now.getMinutes()).padStart(2, '0')}`;
+      }
+      tick();
+      setInterval(tick, 10_000);
+    </script>
+  </body>
+</html>

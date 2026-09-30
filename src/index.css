@@ -1,0 +1,51 @@
+:root {
+  --bg: #f5efe2;
+  --card: #fffaf0;
+  --ink: #141414;
+  --muted: #7a7466;
+  --line: #e4dccb;
+  --dark: #1b1b1b;
+  --dark-2: #2a2a2a;
+
+  --yellow: #f6dc5c;
+  --pink: #f4a7cf;
+  --pink-strong: #e2557f;
+  --green: #b5d98b;
+  --lavender: #c9b8f0;
+  --blue: #a9c7f0;
+  --orange: #f7c38a;
+
+  font: 16px/1.4 'DM Sans', system-ui, -apple-system, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+p {
+  margin: 0;
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
