@@ -77,7 +77,7 @@ export function TodayEntryList({
           detail = [
             `Overall mood ${row.entry.moodScore}/5`,
             row.entry.stressScore ? `Stress ${row.entry.stressScore}/5` : null,
-            row.entry.anxietyScore ? `Anxiety ${row.entry.anxietyScore}/5` : null,
+            row.entry.energyScore ? `Energy ${row.entry.energyScore}/5` : null,
           ]
             .filter(Boolean)
             .join(' · ');

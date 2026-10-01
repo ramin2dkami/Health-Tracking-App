@@ -51,7 +51,6 @@ export function InsightsSection() {
           ))}
         </div>
       </div>
-      <p className="section__sub">Patterns from the last {windowDays} days</p>
 
       {!insights ? (
         <p className="muted">Loading…</p>
@@ -245,11 +244,15 @@ function StressMoodCard({ data, hasFoodTriggers }: { data: StressMoodInsight; ha
     headline = `Your symptoms don’t change much with stress.${hasFoodTriggers ? ' Food looks like the bigger factor.' : ''}`;
   }
 
-  const moodGap = data.mood ? data.mood.lightDayAvg - data.mood.badDayAvg : 0;
-
   return (
     <div className="card">
       <h3 className="card__title">Stress &amp; mood</h3>
+      {data.canCompare ? (
+        <p className="card__sub">
+          Stress 1–2 counts as calm, 4–5 as stressed. Based on {data.calmDays} calm and {data.stressedDays} stressed
+          days.
+        </p>
+      ) : null}
       <p className="stress-headline">{headline}</p>
 
       {data.canCompare && effects ? (
@@ -259,39 +262,6 @@ function StressMoodCard({ data, hasFoodTriggers }: { data: StressMoodInsight; ha
           ))}
           {data.nextDay ? <StressEffectRow effect={data.nextDay} nextDay /> : null}
         </div>
-      ) : null}
-
-      {data.mood ? (
-        <div className="mood-cost">
-          <p className="mood-cost__text">
-            {moodGap >= 0.5
-              ? 'Bad symptom days pull your mood down.'
-              : 'Your mood holds fairly steady, even on bad symptom days.'}
-          </p>
-          <div className="mood-cost__stats">
-            <div>
-              <span className="mood-cost__value">
-                {data.mood.lightDayAvg.toFixed(1)}
-                <span className="mood-cost__unit">/5</span>
-              </span>
-              <span className="mood-cost__label">mood on light days</span>
-            </div>
-            <div>
-              <span className="mood-cost__value">
-                {data.mood.badDayAvg.toFixed(1)}
-                <span className="mood-cost__unit">/5</span>
-              </span>
-              <span className="mood-cost__label">mood on bad days</span>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {data.canCompare ? (
-        <p className="insight-footnote">
-          Stress 1–2 counts as calm, 4–5 as stressed. Based on {data.calmDays} calm and {data.stressedDays} stressed
-          days{data.mood ? `; light days have symptoms of 2 or less, bad days 4 or more` : ''}.
-        </p>
       ) : null}
     </div>
   );

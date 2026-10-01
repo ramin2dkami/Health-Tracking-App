@@ -142,6 +142,10 @@ export async function saveMealTemplate(name: string, tagIds: number[]): Promise<
   return template;
 }
 
+export async function updateMealTemplateTags(id: number, tagIds: number[]): Promise<void> {
+  await db.mealTemplates.update(id, { tagIds });
+}
+
 export async function deleteMealTemplate(id: number): Promise<void> {
   await db.mealTemplates.delete(id);
 }
@@ -151,14 +155,14 @@ export async function deleteMealTemplate(id: number): Promise<void> {
 export async function addMoodLog(
   moodScore: number,
   stressScore?: number,
-  anxietyScore?: number,
+  energyScore?: number,
   note?: string,
 ): Promise<number> {
   const now = new Date();
   return db.moodLogs.add({
     moodScore,
     stressScore,
-    anxietyScore,
+    energyScore,
     note,
     timestamp: now.toISOString(),
     dateKey: todayKey(),

@@ -37,7 +37,7 @@ export interface MoodLog {
   dateKey: string;
   moodScore: number; // 1-5
   stressScore?: number; // 1-5
-  anxietyScore?: number; // 1-5
+  energyScore?: number; // 1-5 (older check-ins may still carry an unused anxietyScore)
   note?: string;
 }
 

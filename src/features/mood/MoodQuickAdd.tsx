@@ -5,11 +5,11 @@ import { ScalePicker } from '../../components/ScalePicker';
 export function MoodQuickAdd({ onAdded }: { onAdded: () => void }) {
   const [moodScore, setMoodScore] = useState(3);
   const [stressScore, setStressScore] = useState(3);
-  const [anxietyScore, setAnxietyScore] = useState(3);
+  const [energyScore, setEnergyScore] = useState(3);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    await addMoodLog(moodScore, stressScore, anxietyScore);
+    await addMoodLog(moodScore, stressScore, energyScore);
     onAdded();
   }
 
@@ -32,12 +32,12 @@ export function MoodQuickAdd({ onAdded }: { onAdded: () => void }) {
         highHint="Very stressed"
       />
       <ScalePicker
-        label="Anxiety"
-        value={anxietyScore}
-        onChange={setAnxietyScore}
+        label="Energy level"
+        value={energyScore}
+        onChange={setEnergyScore}
         color="var(--orange)"
-        lowHint="Relaxed"
-        highHint="Very anxious"
+        lowHint="Drained"
+        highHint="Energized"
       />
       <button type="submit" className="btn btn--dark btn--block">
         Log mood

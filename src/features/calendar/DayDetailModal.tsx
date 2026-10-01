@@ -83,10 +83,10 @@ export function DayDetailModal({ dateKey, onClose }: { dateKey: string; onClose:
                 · Stress <strong>{l.stressScore}/5</strong>
               </>
             ) : null}
-            {l.anxietyScore ? (
+            {l.energyScore ? (
               <>
                 {' '}
-                · Anxiety <strong>{l.anxietyScore}/5</strong>
+                · Energy <strong>{l.energyScore}/5</strong>
               </>
             ) : null}
           </li>

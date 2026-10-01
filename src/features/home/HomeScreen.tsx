@@ -138,9 +138,6 @@ export function HomeScreen({ onAdd }: { onAdd: (mode: AddMode) => void }) {
       <section className="section">
         <div className="section__head">
           <h2>Your week</h2>
-          <button type="button" className="link-btn" onClick={() => navigate('/calendar')}>
-            Trends
-          </button>
         </div>
         <div className="week">
           {week.map((d) => {

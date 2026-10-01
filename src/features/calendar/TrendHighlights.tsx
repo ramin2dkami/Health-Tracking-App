@@ -93,17 +93,17 @@ export function TrendHighlights({
           <h3 className="highlight__title">
             {link.symptom.name} shows up more on {link.tagName} days
           </h3>
-          <div className="compare">
+          <div className="trigger-compare">
             <span>Days with {link.tagName}</span>
-            <span className="compare__track">
-              <span className="compare__fill" style={{ width: pct(link.avgWith), background: link.symptom.color }} />
+            <span className="trigger-compare__track">
+              <span className="trigger-compare__fill" style={{ width: pct(link.avgWith), background: link.symptom.color }} />
             </span>
-            <span className="compare__value">{pct(link.avgWith)}</span>
+            <span className="trigger-compare__value">{pct(link.avgWith)}</span>
             <span>Other days</span>
-            <span className="compare__track">
-              <span className="compare__fill compare__fill--other" style={{ width: pct(link.avgWithout) }} />
+            <span className="trigger-compare__track">
+              <span className="trigger-compare__fill trigger-compare__fill--other" style={{ width: pct(link.avgWithout) }} />
             </span>
-            <span className="compare__value">{pct(link.avgWithout)}</span>
+            <span className="trigger-compare__value">{pct(link.avgWithout)}</span>
           </div>
           <p className="highlight__note">
             Based on {link.daysWith} days you logged {link.tagName}. A pattern, not proof of cause.

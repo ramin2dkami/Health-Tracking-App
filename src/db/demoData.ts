@@ -8,7 +8,7 @@ import type { SymptomDefinition, SymptomLog, FoodTag, FoodLog, MealTemplate, Moo
  * anxiety and poor sleep. Dairy, garlic, onion, beans and wheat drive gut symptoms; coffee drives
  * anxiety and bad sleep; alcohol and sugar drive skin flares; peppermint tea eases bloating.
  * Stress (4–5) brings on anxiety and poor sleep the same day and skin flares the next.
- * Anxiety is modeled like a symptom but recorded as the check-in's anxiety score, not a symptom log.
+ * The evening check-in records mood, stress and energy; energy drops after poor sleep and on bad days.
  * Trigger foods get rarer over the 90 days, as if they're learning what to avoid, so trends improve.
  *
  * Food effects land on the same day as the food because the insight code compares same-day
@@ -17,7 +17,7 @@ import type { SymptomDefinition, SymptomLog, FoodTag, FoodLog, MealTemplate, Moo
 
 const DAYS = 90;
 // Picked because it tells the clearest story in the 30- and 90-day insights (triggers and stress & mood).
-const SEED = 455;
+const SEED = 108;
 
 // Deterministic so the demo looks the same every time it's loaded.
 function makeRandom(seed: number) {
@@ -32,10 +32,11 @@ function makeRandom(seed: number) {
 
 type Trigger = 'dairy' | 'garlic' | 'onion' | 'beans' | 'wheat' | 'coffee' | 'alcohol' | 'sugar';
 
-// Everything the model can bring on. All but anxiety are logged as symptoms.
+// Everything the model can bring on, each logged as a symptom.
 const EFFECTS = ['Bloating', 'Stomach pain', 'Seborrheic dermatitis', 'Anxiety', 'Poor sleep'] as const;
 type SymptomName = (typeof EFFECTS)[number];
-const LOGGED_SYMPTOMS = EFFECTS.filter((name) => name !== 'Anxiety');
+// Anxiety goes last so the other symptoms keep the colors they had before it was logged.
+const LOGGED_SYMPTOMS: SymptomName[] = [...EFFECTS.filter((name) => name !== 'Anxiety'), 'Anxiety'];
 
 // Each meal is a safe base plus the triggers it carries. Risky meals reuse the everyday base foods,
 // so only the trigger itself stands out in the insights.
@@ -106,6 +107,7 @@ const NOTES: Partial<Record<SymptomName, string[]>> = {
   'Stomach pain': ['Cramping after eating', 'Sharp pain, lower left side', 'Had to lie down for a bit'],
   'Seborrheic dermatitis': ['Flaky patches around eyebrows', 'Itchy scalp, lots of flakes', 'Redness along the nose'],
   'Poor sleep': ['Took ages to fall asleep', 'Woke up at 3am', 'Restless, tossing and turning'],
+  Anxiety: ['Racing thoughts all afternoon', 'Felt on edge', 'Tight chest, hard to focus'],
 };
 
 function at(day: Date, hour: number, minute: number) {
@@ -123,8 +125,8 @@ export async function clearAllData(): Promise<void> {
 }
 
 /** Replaces everything in the diary with the demo persona's last 90 days. */
-export async function loadDemoData(now = new Date()): Promise<void> {
-  const random = makeRandom(SEED);
+export async function loadDemoData(now = new Date(), seed = SEED): Promise<void> {
+  const random = makeRandom(seed);
   const chance = (p: number) => random() < p;
   const pick = <T>(items: T[]) => items[Math.floor(random() * items.length)];
   const between = (min: number, max: number) => min + Math.floor(random() * (max - min + 1));
@@ -229,16 +231,15 @@ export async function loadDemoData(now = new Date()): Promise<void> {
       if (!hits.has('Poor sleep') && chance(0.3)) hits.set('Poor sleep', between(2, 4));
     }
 
-    const symptomTimes: Partial<Record<SymptomName, [number, number]>> = {
+    const symptomTimes: Record<SymptomName, [number, number]> = {
       Bloating: [14, 21],
       'Stomach pain': [13, 21],
       'Seborrheic dermatitis': [8, 10],
       'Poor sleep': [22, 23],
+      Anxiety: [10, 18],
     };
     for (const [name, severity] of hits) {
-      const times = symptomTimes[name];
-      if (!times) continue; // Anxiety goes into the check-in instead.
-      const [from, to] = times;
+      const [from, to] = symptomTimes[name];
       const timestamp = at(day, between(from, to), between(0, 59));
       if (isToday && timestamp > now) continue;
       const notes = NOTES[name];
@@ -256,11 +257,14 @@ export async function loadDemoData(now = new Date()): Promise<void> {
     // Today's check-in lands earlier so the home screen has a score to show.
     const moodTime = isToday ? new Date(Math.min(at(day, 21, 0).getTime(), now.getTime() - 20 * 60000)) : at(day, 21, between(0, 45));
     if (!isToday || moodTime >= at(day, 7, 0)) {
-      const anxiety = hits.get('Anxiety') ?? (stress >= 4 ? 2 : 1);
+      const energy = Math.min(
+        5,
+        Math.max(1, 4 - (hits.has('Poor sleep') ? 2 : 0) - (gutFlare >= 4 ? 1 : 0) + between(-1, 1)),
+      );
       moodLogs.push({
         moodScore: mood,
         stressScore: stress,
-        anxietyScore: anxiety,
+        energyScore: energy,
         timestamp: moodTime.toISOString(),
         dateKey,
       });

@@ -31,8 +31,6 @@ const STRESSED_MIN_STRESS = 4;
 const STRESS_MIN_DAYS = 4;
 const STRESS_MIN_GAP = 0.2;
 const MAX_STRESS_EFFECTS = 3;
-const LIGHT_DAY_MAX_SEVERITY = 2;
-const BAD_DAY_MIN_SEVERITY = 4;
 const MIN_LOGS_FOR_AVG = 2;
 
 interface WindowRange {
@@ -186,13 +184,6 @@ export interface StressSymptomEffect {
   stressedRate: number;
 }
 
-export interface MoodCost {
-  lightDayAvg: number;
-  badDayAvg: number;
-  lightDays: number;
-  badDays: number;
-}
-
 export interface StressMoodInsight {
   calmDays: number;
   stressedDays: number;
@@ -202,7 +193,6 @@ export interface StressMoodInsight {
   sameDay: StressSymptomEffect[];
   /** Strongest effect that shows up the day after a stressful day, for a symptom not already in `sameDay`. */
   nextDay: StressSymptomEffect | null;
-  mood: MoodCost | null;
 }
 
 function nextDateKey(dateKey: string): string {
@@ -223,10 +213,8 @@ export async function computeStressMoodInsight(days: InsightWindow): Promise<Str
   // A day with a check-in counts as tracked, so days with no symptoms logged count as symptom-free.
   const checkIns = latestPerDay(moodLogs);
   const symptomDays = new Map<number, Set<string>>();
-  const worstByDay = new Map<string, number>();
   for (const log of symptomLogs) {
     symptomDays.set(log.symptomId, (symptomDays.get(log.symptomId) ?? new Set()).add(log.dateKey));
-    worstByDay.set(log.dateKey, Math.max(worstByDay.get(log.dateKey) ?? 0, log.severity));
   }
 
   const calm: string[] = [];
@@ -259,21 +247,12 @@ export async function computeStressMoodInsight(days: InsightWindow): Promise<Str
   const shown = new Set(sameDay.map((e) => e.symptom.id));
   const nextDay = effectsFor(followUps(calm), followUps(stressed)).find((e) => !shown.has(e.symptom.id)) ?? null;
 
-  const light = [...checkIns.keys()].filter((d) => (worstByDay.get(d) ?? 0) <= LIGHT_DAY_MAX_SEVERITY);
-  const bad = [...checkIns.keys()].filter((d) => (worstByDay.get(d) ?? 0) >= BAD_DAY_MIN_SEVERITY);
-  const avgMood = (ds: string[]) => ds.reduce((sum, d) => sum + checkIns.get(d)!.moodScore, 0) / ds.length;
-  const mood =
-    light.length >= STRESS_MIN_DAYS && bad.length >= STRESS_MIN_DAYS
-      ? { lightDayAvg: avgMood(light), badDayAvg: avgMood(bad), lightDays: light.length, badDays: bad.length }
-      : null;
-
   return {
     calmDays: calm.length,
     stressedDays: stressed.length,
     canCompare: calm.length >= STRESS_MIN_DAYS && stressed.length >= STRESS_MIN_DAYS,
     sameDay,
     nextDay,
-    mood,
   };
 }
 

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FoodTag, MealTemplate } from '../../db/schema';
-import { findOrCreateFoodTag, addFoodLog, saveMealTemplate } from '../../db/repository';
+import { findOrCreateFoodTag, addFoodLog, saveMealTemplate, updateMealTemplateTags } from '../../db/repository';
+import { Dialog } from '../../components/Dialog';
 
 export function FoodQuickAdd({
   foodTags,
@@ -18,6 +19,10 @@ export function FoodQuickAdd({
   const [tagNamesById, setTagNamesById] = useState(() => new Map(foodTags.map((t) => [t.id, t.name])));
   const [savingName, setSavingName] = useState<string | null>(null);
   const [savedMessage, setSavedMessage] = useState('');
+  // The saved meal the form was started from; edits to it can overwrite it.
+  const [loadedId, setLoadedId] = useState<number | null>(null);
+  const [confirmingOverwrite, setConfirmingOverwrite] = useState(false);
+  const [nameError, setNameError] = useState('');
 
   const query = input.trim().toLowerCase();
   const suggestions = foodTags
@@ -49,6 +54,8 @@ export function FoodQuickAdd({
   function applyTemplate(template: MealTemplate) {
     const names = templateTagNames(template);
     setPendingTags([...pendingTags, ...names.filter((n) => !pendingTags.includes(n))]);
+    // Combining a meal with other foods isn't an edit of that meal, so only track it on an empty form.
+    setLoadedId(pendingTags.length === 0 ? template.id : null);
     if (!mealLabel.trim()) setMealLabel(template.name);
     setSavedMessage('');
   }
@@ -74,25 +81,61 @@ export function FoodQuickAdd({
     onAdded();
   }
 
-  async function handleSaveTemplate() {
-    const name = savingName?.trim();
+  async function resolveTags() {
     const tags = allTags();
-    if (!name || tags.length === 0) return;
     const tagIds = await Promise.all(tags.map((n) => findOrCreateFoodTag(n)));
-    const saved = await saveMealTemplate(name, tagIds);
     const names = new Map(tagNamesById);
     tags.forEach((n, i) => names.set(tagIds[i], n));
     setTagNamesById(names);
-    const replaced = templates.some((t) => t.id === saved.id);
-    setTemplates(replaced ? templates.map((t) => (t.id === saved.id ? saved : t)) : [...templates, saved]);
     setPendingTags(tags);
     setInput('');
+    return tagIds;
+  }
+
+  async function handleSaveTemplate() {
+    const name = savingName?.trim();
+    if (!name || allTags().length === 0) return;
+    // saveMealTemplate overwrites on a name match; overwriting only happens through the confirm dialog.
+    if (templates.some((t) => t.name.toLowerCase() === name.toLowerCase())) {
+      setNameError(`You already have a meal called “${name}”. Pick another name.`);
+      return;
+    }
+    const saved = await saveMealTemplate(name, await resolveTags());
+    setTemplates([...templates, saved]);
+    setLoadedId(saved.id);
     if (!mealLabel.trim()) setMealLabel(saved.name);
     setSavingName(null);
-    setSavedMessage(replaced ? `Updated “${saved.name}”` : `Saved “${saved.name}” to your meals`);
+    setSavedMessage(`Saved “${saved.name}” to your meals`);
+  }
+
+  async function handleOverwrite() {
+    if (!loaded) return;
+    const tagIds = await resolveTags();
+    await updateMealTemplateTags(loaded.id, tagIds);
+    setTemplates(templates.map((t) => (t.id === loaded.id ? { ...t, tagIds } : t)));
+    setConfirmingOverwrite(false);
+    setSavedMessage(`Updated “${loaded.name}”`);
+  }
+
+  function startSaving(name: string) {
+    setSavingName(name);
+    setNameError('');
+    setSavedMessage('');
+  }
+
+  function handleSaveClick() {
+    if (loaded) setConfirmingOverwrite(true);
+    else startSaving(mealLabel.trim());
   }
 
   const hasTags = allTags().length > 0;
+  const loaded = templates.find((t) => t.id === loadedId);
+  const loadedUnchanged = (() => {
+    if (!loaded) return false;
+    const current = allTags();
+    const original = templateTagNames(loaded);
+    return current.length === original.length && original.every((n) => current.includes(n));
+  })();
 
   return (
     <form onSubmit={handleSubmit} className="form">
@@ -159,7 +202,10 @@ export function FoodQuickAdd({
             <input
               className="input"
               value={savingName}
-              onChange={(e) => setSavingName(e.target.value)}
+              onChange={(e) => {
+                setSavingName(e.target.value);
+                setNameError('');
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
@@ -174,6 +220,11 @@ export function FoodQuickAdd({
               Save
             </button>
           </div>
+          {nameError && (
+            <p className="field-error" role="alert">
+              {nameError}
+            </p>
+          )}
           <button type="button" className="btn btn--small" onClick={() => setSavingName(null)}>
             Cancel
           </button>
@@ -189,11 +240,9 @@ export function FoodQuickAdd({
         <button
           type="button"
           className="btn"
-          disabled={!hasTags || savingName !== null}
-          onClick={() => {
-            setSavingName(mealLabel.trim());
-            setSavedMessage('');
-          }}
+          disabled={!hasTags || savingName !== null || loadedUnchanged}
+          title={loadedUnchanged ? 'Change the foods to update this saved meal' : undefined}
+          onClick={handleSaveClick}
         >
           Save as meal
         </button>
@@ -201,6 +250,33 @@ export function FoodQuickAdd({
           Log food
         </button>
       </div>
+
+      {confirmingOverwrite && loaded && (
+        <Dialog title={`Update “${loaded.name}”?`} onClose={() => setConfirmingOverwrite(false)}>
+          <p className="dialog__body">
+            This replaces the foods in your saved meal “{loaded.name}” with the ones above. You can keep the original
+            and save these as a new meal instead.
+          </p>
+          <div className="dialog__actions">
+            <button type="button" className="btn btn--dark" onClick={handleOverwrite}>
+              Update “{loaded.name}”
+            </button>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => {
+                setConfirmingOverwrite(false);
+                startSaving('');
+              }}
+            >
+              Save as new meal
+            </button>
+            <button type="button" className="btn btn--small" onClick={() => setConfirmingOverwrite(false)}>
+              Cancel
+            </button>
+          </div>
+        </Dialog>
+      )}
     </form>
   );
 }
