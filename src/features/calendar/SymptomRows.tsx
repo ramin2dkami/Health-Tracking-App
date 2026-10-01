@@ -143,7 +143,7 @@ function SymptomDetail({
               aria-pressed={tagId === l.tagId}
               onClick={() => onPickTag(l.tagId)}
             >
-              {l.tagName} · {pct(l.avgWith)} vs {pct(l.avgWithout)}
+              {l.tagName}: {pct(l.avgWith)} of days vs {pct(l.avgWithout)} without
             </button>
           ))}
         </div>
