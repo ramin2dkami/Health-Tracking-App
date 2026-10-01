@@ -1,16 +1,27 @@
 import type { SymptomFoodLink } from './foodAssociations';
 import { FLARE_SEVERITY, type TrendSummaryData } from './summarizeTrends';
 import { Sparkline } from './Sparkline';
+import type { EnergySummary } from './summarizeEnergy';
 import { DENSE_DAYS, directionPhrase, pct, shortDate } from './trendFormat';
 
 const MAX_TRIGGER_CARDS = 2;
+// Darker than the check-in's --orange so the line reads on the cream card, and distinct from symptom colors.
+const ENERGY_COLOR = '#ee7d3b';
+
+const ENERGY_TITLES = {
+  improving: 'Your energy is picking up',
+  worsening: 'Your energy is dipping',
+  steady: 'Your energy is holding steady',
+} as const;
 
 export function TrendHighlights({
   summary,
+  energy,
   days,
   onSelectDay,
 }: {
   summary: TrendSummaryData;
+  energy: EnergySummary | null;
   days: string[];
   onSelectDay: (dateKey: string) => void;
 }) {
@@ -85,6 +96,29 @@ export function TrendHighlights({
           <span>{shortDate(days[0])}</span>
           <span>{shortDate(days[days.length - 1])}</span>
         </div>
+      </article>
+
+      <article className="card highlight">
+        <p className="highlight__eyebrow">Energy</p>
+        {energy === null ? (
+          <>
+            <h3 className="highlight__title">No energy check-ins yet</h3>
+            <p className="highlight__body">Rate your energy when you log mood &amp; stress to see it here.</p>
+          </>
+        ) : (
+          <>
+            <h3 className="highlight__title">
+              {energy.direction ? ENERGY_TITLES[energy.direction] : `Energy averages ${energy.avg.toFixed(1)}/5`}
+            </h3>
+            <p className="highlight__body">
+              Avg {energy.avg.toFixed(1)}/5 across {energy.daysLogged} {energy.daysLogged === 1 ? 'check-in' : 'check-ins'}.
+              {energy.flareAvg !== null && energy.otherAvg !== null
+                ? ` On ${summary.trends.length === 1 ? `days ${top.symptom.name} hit 4 or 5` : 'flare-up days'} it averages ${energy.flareAvg.toFixed(1)}, vs ${energy.otherAvg.toFixed(1)} on other days.`
+                : ''}
+            </p>
+            <Sparkline values={energy.series} color={ENERGY_COLOR} className="highlight__spark" area />
+          </>
+        )}
       </article>
 
       {triggers.map((link) => (

@@ -1,8 +1,8 @@
 import type { FoodLog, FoodTag, SymptomDefinition, SymptomLog } from '../../db/schema';
 import { linkFoodsToSymptoms, type SymptomFoodLink } from './foodAssociations';
 
-const TREND_THRESHOLD = 0.4;
-const MIN_HALF_DAYS = 2;
+export const TREND_THRESHOLD = 0.4;
+export const MIN_HALF_DAYS = 2;
 export const FLARE_SEVERITY = 4;
 const MIN_FOOD_DAYS = 4;
 const MIN_RATE_GAP = 0.25;

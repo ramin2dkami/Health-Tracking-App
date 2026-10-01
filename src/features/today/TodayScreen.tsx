@@ -48,6 +48,7 @@ export function TodayScreen({ onAdd }: { onAdd: () => void }) {
         symptomLogs={symptomLogs}
         symptomsById={new Map(symptoms.map((s) => [s.id, s]))}
         foodLogs={foodLogs}
+        foodTags={foodTags}
         foodTagsById={new Map(foodTags.map((t) => [t.id, t]))}
         moodLogs={moodLogs}
         onChanged={bump}

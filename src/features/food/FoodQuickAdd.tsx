@@ -2,6 +2,8 @@ import { useState } from 'react';
 import type { FoodTag, MealTemplate } from '../../db/schema';
 import { findOrCreateFoodTag, addFoodLog, saveMealTemplate, updateMealTemplateTags } from '../../db/repository';
 import { Dialog } from '../../components/Dialog';
+import { FoodTagInput } from './FoodTagInput';
+import { withTypedTag } from './foodTagText';
 
 export function FoodQuickAdd({
   foodTags,
@@ -24,28 +26,7 @@ export function FoodQuickAdd({
   const [confirmingOverwrite, setConfirmingOverwrite] = useState(false);
   const [nameError, setNameError] = useState('');
 
-  const query = input.trim().toLowerCase();
-  const suggestions = foodTags
-    .filter((t) => (query ? t.name.includes(query) : true))
-    .filter((t) => !pendingTags.includes(t.name))
-    .slice(0, 8);
-
-  // Includes whatever is still typed in the box, so nothing is silently dropped.
-  function allTags() {
-    const typed = input.trim().toLowerCase();
-    return typed && !pendingTags.includes(typed) ? [...pendingTags, typed] : pendingTags;
-  }
-
-  function addTag(name: string) {
-    const clean = name.trim().toLowerCase();
-    if (!clean || pendingTags.includes(clean)) return;
-    setPendingTags([...pendingTags, clean]);
-    setInput('');
-  }
-
-  function removeTag(name: string) {
-    setPendingTags(pendingTags.filter((t) => t !== name));
-  }
+  const allTags = () => withTypedTag(pendingTags, input);
 
   function templateTagNames(template: MealTemplate) {
     return template.tagIds.map((id) => tagNamesById.get(id)).filter((n): n is string => !!n);
@@ -63,13 +44,6 @@ export function FoodQuickAdd({
   function isApplied(template: MealTemplate) {
     const names = templateTagNames(template);
     return names.length > 0 && names.every((n) => pendingTags.includes(n));
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault();
-      addTag(input);
-    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -166,34 +140,13 @@ export function FoodQuickAdd({
           placeholder="Breakfast, lunch, snack…"
         />
       </label>
-      <div>
-        <span className="field-label">What did you eat?</span>
-        <div className="tag-input">
-          {pendingTags.map((t) => (
-            <span key={t} className="chip is-selected chip--small">
-              {t}
-              <button type="button" className="chip__remove" onClick={() => removeTag(t)} aria-label={`Remove ${t}`}>
-                ×
-              </button>
-            </span>
-          ))}
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={pendingTags.length ? 'Add more…' : 'Type an ingredient, press Enter'}
-          />
-        </div>
-        {suggestions.length > 0 && (
-          <div className="chips chips--suggest">
-            {suggestions.map((s) => (
-              <button key={s.id} type="button" className="chip chip--small" onClick={() => addTag(s.name)}>
-                + {s.name}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      <FoodTagInput
+        tags={pendingTags}
+        onTagsChange={setPendingTags}
+        input={input}
+        onInputChange={setInput}
+        foodTags={foodTags}
+      />
 
       {savingName !== null && (
         <div className="save-meal">

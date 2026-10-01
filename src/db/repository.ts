@@ -78,8 +78,11 @@ export async function deleteSymptomLog(id: number): Promise<void> {
   await db.symptomLogs.delete(id);
 }
 
-export async function updateSymptomLog(id: number, severity: number, note?: string): Promise<void> {
-  await db.symptomLogs.update(id, { severity, note });
+export async function updateSymptomLog(
+  id: number,
+  changes: Partial<Pick<SymptomLog, 'severity' | 'timestamp'>>,
+): Promise<void> {
+  await db.symptomLogs.update(id, changes);
 }
 
 // --- Food tags ---
@@ -117,6 +120,13 @@ export async function listFoodLogsForDate(dateKey: string): Promise<FoodLog[]> {
 
 export async function listFoodLogsInRange(startKey: string, endKey: string): Promise<FoodLog[]> {
   return db.foodLogs.where('dateKey').between(startKey, endKey, true, true).toArray();
+}
+
+export async function updateFoodLog(
+  id: number,
+  changes: Partial<Pick<FoodLog, 'tagIds' | 'mealLabel' | 'timestamp'>>,
+): Promise<void> {
+  await db.foodLogs.update(id, changes);
 }
 
 export async function deleteFoodLog(id: number): Promise<void> {
@@ -167,6 +177,13 @@ export async function addMoodLog(
     timestamp: now.toISOString(),
     dateKey: todayKey(),
   } as MoodLog);
+}
+
+export async function updateMoodLog(
+  id: number,
+  changes: Partial<Pick<MoodLog, 'moodScore' | 'stressScore' | 'energyScore' | 'timestamp'>>,
+): Promise<void> {
+  await db.moodLogs.update(id, changes);
 }
 
 export async function listMoodLogsForDate(dateKey: string): Promise<MoodLog[]> {

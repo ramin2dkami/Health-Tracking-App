@@ -1,18 +1,21 @@
+import { useState } from 'react';
 import type { SymptomDefinition, SymptomLog, FoodLog, FoodTag, MoodLog } from '../../db/schema';
 import { deleteSymptomLog, deleteFoodLog, deleteMoodLog } from '../../db/repository';
 import { Icon, type IconName } from '../../components/Icon';
+import { EditEntrySheet } from './EditEntrySheet';
 
 interface Props {
   symptomLogs: SymptomLog[];
   symptomsById: Map<number, SymptomDefinition>;
   foodLogs: FoodLog[];
+  foodTags: FoodTag[];
   foodTagsById: Map<number, FoodTag>;
   moodLogs: MoodLog[];
   onChanged: () => void;
   onAdd: () => void;
 }
 
-type Row =
+export type Row =
   | { kind: 'symptom'; time: string; entry: SymptomLog }
   | { kind: 'food'; time: string; entry: FoodLog }
   | { kind: 'mood'; time: string; entry: MoodLog };
@@ -31,11 +34,13 @@ export function TodayEntryList({
   symptomLogs,
   symptomsById,
   foodLogs,
+  foodTags,
   foodTagsById,
   moodLogs,
   onChanged,
   onAdd,
 }: Props) {
+  const [editing, setEditing] = useState<Row | null>(null);
   const rows: Row[] = [
     ...symptomLogs.map((entry) => ({ kind: 'symptom' as const, time: entry.timestamp, entry })),
     ...foodLogs.map((entry) => ({ kind: 'food' as const, time: entry.timestamp, entry })),
@@ -61,48 +66,70 @@ export function TodayEntryList({
   }
 
   return (
-    <ul className="entries">
-      {rows.map((row) => {
-        const { icon, color } = KIND_STYLE[row.kind];
-        let title = '';
-        let detail = '';
-        if (row.kind === 'symptom') {
-          title = symptomsById.get(row.entry.symptomId)?.name ?? 'Unknown symptom';
-          detail = `Severity ${row.entry.severity}/5`;
-        } else if (row.kind === 'food') {
-          title = row.entry.mealLabel ?? 'Food';
-          detail = row.entry.tagIds.map((id) => foodTagsById.get(id)?.name ?? '?').join(' · ');
-        } else {
-          title = 'Mood & stress';
-          detail = [
-            `Overall mood ${row.entry.moodScore}/5`,
-            row.entry.stressScore ? `Stress ${row.entry.stressScore}/5` : null,
-            row.entry.energyScore ? `Energy ${row.entry.energyScore}/5` : null,
-          ]
-            .filter(Boolean)
-            .join(' · ');
-        }
-        return (
-          <li key={`${row.kind}-${row.entry.id}`} className="entry">
-            <span className="entry__icon" style={{ background: color }}>
-              <Icon name={icon} size={18} />
-            </span>
-            <span className="entry__text">
-              <span className="entry__title">{title}</span>
-              <span className="entry__detail">{detail}</span>
-            </span>
-            <span className="entry__time">{formatTime(row.time)}</span>
-            <button
-              type="button"
-              className="icon-btn icon-btn--small"
-              onClick={() => handleDelete(row)}
-              aria-label={`Delete ${title}`}
-            >
-              <Icon name="trash" size={16} />
-            </button>
-          </li>
-        );
-      })}
-    </ul>
+    <>
+      <ul className="entries">
+        {rows.map((row) => {
+          const { icon, color } = KIND_STYLE[row.kind];
+          let title = '';
+          let detail = '';
+          if (row.kind === 'symptom') {
+            title = symptomsById.get(row.entry.symptomId)?.name ?? 'Unknown symptom';
+            detail = `Severity ${row.entry.severity}/5`;
+          } else if (row.kind === 'food') {
+            title = row.entry.mealLabel ?? 'Food';
+            detail = row.entry.tagIds.map((id) => foodTagsById.get(id)?.name ?? '?').join(' · ');
+          } else {
+            title = 'Mood & stress';
+            detail = [
+              `Overall mood ${row.entry.moodScore}/5`,
+              row.entry.stressScore ? `Stress ${row.entry.stressScore}/5` : null,
+              row.entry.energyScore ? `Energy ${row.entry.energyScore}/5` : null,
+            ]
+              .filter(Boolean)
+              .join(' · ');
+          }
+          return (
+            <li key={`${row.kind}-${row.entry.id}`} className="entry">
+              <button
+                type="button"
+                className="entry__main"
+                onClick={() => setEditing(row)}
+                aria-label={`Edit ${title}, ${formatTime(row.time)}`}
+              >
+                <span className="entry__icon" style={{ background: color }}>
+                  <Icon name={icon} size={18} />
+                </span>
+                <span className="entry__text">
+                  <span className="entry__title">{title}</span>
+                  <span className="entry__detail">{detail}</span>
+                </span>
+                <span className="entry__time">{formatTime(row.time)}</span>
+              </button>
+              <button
+                type="button"
+                className="icon-btn icon-btn--small"
+                onClick={() => handleDelete(row)}
+                aria-label={`Delete ${title}`}
+              >
+                <Icon name="trash" size={16} />
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      {editing && (
+        <EditEntrySheet
+          row={editing}
+          symptomsById={symptomsById}
+          foodTags={foodTags}
+          foodTagsById={foodTagsById}
+          onClose={() => setEditing(null)}
+          onSaved={() => {
+            setEditing(null);
+            onChanged();
+          }}
+        />
+      )}
+    </>
   );
 }

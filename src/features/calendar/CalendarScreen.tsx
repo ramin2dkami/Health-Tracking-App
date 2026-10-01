@@ -4,6 +4,7 @@ import { DayDetailModal } from './DayDetailModal';
 import { TrendHighlights } from './TrendHighlights';
 import { SymptomRows } from './SymptomRows';
 import { summarizeTrends } from './summarizeTrends';
+import { summarizeEnergy } from './summarizeEnergy';
 import { aggregateMaxSeverityByDay } from './aggregateSeverity';
 import { SEVERITY_COLORS } from './severityColors';
 import {
@@ -11,9 +12,10 @@ import {
   listSymptomLogsInRange,
   listFoodLogsInRange,
   listFoodTags,
+  listMoodLogsInRange,
 } from '../../db/repository';
 import { toDateKey, dateKeysBetween } from '../../db/dateKey';
-import type { FoodLog, FoodTag, SymptomDefinition, SymptomLog } from '../../db/schema';
+import type { FoodLog, FoodTag, MoodLog, SymptomDefinition, SymptomLog } from '../../db/schema';
 import { useDataVersion } from '../../data/DataVersion';
 import { Icon } from '../../components/Icon';
 
@@ -48,6 +50,7 @@ export function CalendarScreen() {
   const [rangeDays, setRangeDays] = useState(30);
   const [rangeLogs, setRangeLogs] = useState<SymptomLog[]>([]);
   const [rangeFoodLogs, setRangeFoodLogs] = useState<FoodLog[]>([]);
+  const [rangeMoodLogs, setRangeMoodLogs] = useState<MoodLog[]>([]);
   const [foodTags, setFoodTags] = useState<FoodTag[]>([]);
 
   useEffect(() => {
@@ -66,9 +69,14 @@ export function CalendarScreen() {
   useEffect(() => {
     const start = rangeStartKey(rangeDays);
     const end = toDateKey(new Date());
-    Promise.all([listSymptomLogsInRange(start, end), listFoodLogsInRange(start, end)]).then(([sl, fl]) => {
+    Promise.all([
+      listSymptomLogsInRange(start, end),
+      listFoodLogsInRange(start, end),
+      listMoodLogsInRange(start, end),
+    ]).then(([sl, fl, ml]) => {
       setRangeLogs(sl);
       setRangeFoodLogs(fl);
+      setRangeMoodLogs(ml);
     });
   }, [rangeDays, version]);
 
@@ -87,6 +95,10 @@ export function CalendarScreen() {
   const summary = useMemo(
     () => summarizeTrends({ days, allLogs: rangeLogs, foodLogs: rangeFoodLogs, tags: foodTags, symptoms: scopedSymptoms }),
     [days, rangeLogs, rangeFoodLogs, foodTags, scopedSymptoms],
+  );
+  const energy = useMemo(
+    () => summarizeEnergy(days, rangeMoodLogs, summary.worstByDay),
+    [days, rangeMoodLogs, summary],
   );
 
   const weekEnd = addDays(weekStart, 6);
@@ -166,7 +178,7 @@ export function CalendarScreen() {
           <p className="muted">No symptoms logged in this range yet.</p>
         ) : (
           <>
-            <TrendHighlights summary={summary} days={days} onSelectDay={setSelectedDate} />
+            <TrendHighlights summary={summary} energy={energy} days={days} onSelectDay={setSelectedDate} />
             <section className="card">
               <div className="card__head">
                 <h2>By symptom</h2>

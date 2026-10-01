@@ -999,6 +999,47 @@ button.blob:active {
   background: var(--card);
   border-radius: 20px;
   padding: 12px 8px 12px 14px;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+/* Keyed to the edit area, so hovering the delete button doesn't suggest the card opens. */
+@media (hover: hover) {
+  .entry:has(.entry__main:hover) {
+    background: #fff;
+    box-shadow: 0 6px 18px rgba(20, 20, 20, 0.08);
+    transform: translateY(-1px);
+  }
+
+  .entry .icon-btn--small:hover {
+    background: rgba(20, 20, 20, 0.07);
+    color: var(--ink);
+  }
+}
+
+.entry:has(.entry__main:focus-visible) {
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+.entry__main:focus-visible {
+  outline: none;
+}
+
+.entry__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 .entry__icon {
