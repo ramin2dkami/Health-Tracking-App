@@ -21,3 +21,9 @@ export function dateKeysBetween(startKey: string, endKey: string): string[] {
   }
   return keys;
 }
+
+/** Monday of the week containing `date`; weeks run Monday to Sunday throughout the app. */
+export function startOfWeek(date: Date = new Date()): Date {
+  const sinceMonday = (date.getDay() + 6) % 7;
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() - sinceMonday);
+}

@@ -17,10 +17,10 @@ export function FoodTagInput({
   foodTags: FoodTag[];
 }) {
   const query = input.trim().toLowerCase();
-  const suggestions = foodTags
-    .filter((t) => (query ? t.name.includes(query) : true))
-    .filter((t) => !tags.includes(t.name))
-    .slice(0, MAX_SUGGESTIONS);
+  // Typing moves matches to the front but never empties the row.
+  const available = foodTags.filter((t) => !tags.includes(t.name));
+  const matches = query ? available.filter((t) => t.name.includes(query)) : [];
+  const suggestions = [...matches, ...available.filter((t) => !matches.includes(t))].slice(0, MAX_SUGGESTIONS);
 
   function addTag(name: string) {
     const clean = name.trim().toLowerCase();
@@ -57,8 +57,11 @@ export function FoodTagInput({
           value={input}
           onChange={(e) => onInputChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={tags.length ? 'Add more…' : 'Type an ingredient, press Enter'}
+          placeholder={tags.length ? 'Add more…' : 'Type an ingredient…'}
         />
+        <button type="button" className="btn btn--pink btn--small" disabled={!query} onClick={() => addTag(input)}>
+          Add
+        </button>
       </div>
       {suggestions.length > 0 && (
         <div className="chips chips--suggest">

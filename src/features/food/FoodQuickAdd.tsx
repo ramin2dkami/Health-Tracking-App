@@ -16,13 +16,14 @@ export function FoodQuickAdd({
 }) {
   const [pendingTags, setPendingTags] = useState<string[]>([]);
   const [input, setInput] = useState('');
-  const [mealLabel, setMealLabel] = useState('');
   const [templates, setTemplates] = useState(initialTemplates);
   const [tagNamesById, setTagNamesById] = useState(() => new Map(foodTags.map((t) => [t.id, t.name])));
   const [savingName, setSavingName] = useState<string | null>(null);
   const [savedMessage, setSavedMessage] = useState('');
-  // The saved meal the form was started from; edits to it can overwrite it.
+  // The one selected saved meal; edits to its foods can overwrite it.
   const [loadedId, setLoadedId] = useState<number | null>(null);
+  // Foods the selected meal added, so swapping meals doesn't remove foods entered separately.
+  const [mealAdded, setMealAdded] = useState<string[]>([]);
   const [confirmingOverwrite, setConfirmingOverwrite] = useState(false);
   const [nameError, setNameError] = useState('');
 
@@ -32,18 +33,21 @@ export function FoodQuickAdd({
     return template.tagIds.map((id) => tagNamesById.get(id)).filter((n): n is string => !!n);
   }
 
-  function applyTemplate(template: MealTemplate) {
-    const names = templateTagNames(template);
-    setPendingTags([...pendingTags, ...names.filter((n) => !pendingTags.includes(n))]);
-    // Combining a meal with other foods isn't an edit of that meal, so only track it on an empty form.
-    setLoadedId(pendingTags.length === 0 ? template.id : null);
-    if (!mealLabel.trim()) setMealLabel(template.name);
+  // Only one saved meal at a time: picking another swaps out the previous meal's foods (typed extras stay),
+  // and tapping the selected meal again removes it.
+  function selectTemplate(template: MealTemplate) {
+    const kept = pendingTags.filter((n) => !mealAdded.includes(n));
+    if (template.id === loadedId) {
+      setPendingTags(kept);
+      setLoadedId(null);
+      setMealAdded([]);
+    } else {
+      const added = templateTagNames(template).filter((n) => !kept.includes(n));
+      setPendingTags([...kept, ...added]);
+      setLoadedId(template.id);
+      setMealAdded(added);
+    }
     setSavedMessage('');
-  }
-
-  function isApplied(template: MealTemplate) {
-    const names = templateTagNames(template);
-    return names.length > 0 && names.every((n) => pendingTags.includes(n));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -51,7 +55,8 @@ export function FoodQuickAdd({
     const tags = allTags();
     if (tags.length === 0) return;
     const tagIds = await Promise.all(tags.map((name) => findOrCreateFoodTag(name)));
-    await addFoodLog(tagIds, mealLabel.trim() || undefined);
+    // Logged under the name of the selected saved meal, if any.
+    await addFoodLog(tagIds, loaded?.name);
     onAdded();
   }
 
@@ -77,7 +82,7 @@ export function FoodQuickAdd({
     const saved = await saveMealTemplate(name, await resolveTags());
     setTemplates([...templates, saved]);
     setLoadedId(saved.id);
-    if (!mealLabel.trim()) setMealLabel(saved.name);
+    setMealAdded([]);
     setSavingName(null);
     setSavedMessage(`Saved “${saved.name}” to your meals`);
   }
@@ -99,7 +104,7 @@ export function FoodQuickAdd({
 
   function handleSaveClick() {
     if (loaded) setConfirmingOverwrite(true);
-    else startSaving(mealLabel.trim());
+    else startSaving('');
   }
 
   const hasTags = allTags().length > 0;
@@ -113,16 +118,24 @@ export function FoodQuickAdd({
 
   return (
     <form onSubmit={handleSubmit} className="form">
+      <FoodTagInput
+        tags={pendingTags}
+        onTagsChange={setPendingTags}
+        input={input}
+        onInputChange={setInput}
+        foodTags={foodTags}
+      />
       {templates.length > 0 && (
         <div>
-          <span className="field-label">Saved meals</span>
+          <span className="field-label">Or pick a saved meal</span>
           <div className="chips" role="group" aria-label="Saved meals">
             {templates.map((t) => (
               <button
                 key={t.id}
                 type="button"
-                className={`chip chip--meal ${isApplied(t) ? 'is-selected' : ''}`}
-                onClick={() => applyTemplate(t)}
+                className={`chip chip--meal ${t.id === loadedId ? 'is-selected' : ''}`}
+                aria-pressed={t.id === loadedId}
+                onClick={() => selectTemplate(t)}
                 title={templateTagNames(t).join(' · ')}
               >
                 {t.name}
@@ -131,58 +144,7 @@ export function FoodQuickAdd({
           </div>
         </div>
       )}
-      <label>
-        <span className="field-label">Meal (optional)</span>
-        <input
-          className="input"
-          value={mealLabel}
-          onChange={(e) => setMealLabel(e.target.value)}
-          placeholder="Breakfast, lunch, snack…"
-        />
-      </label>
-      <FoodTagInput
-        tags={pendingTags}
-        onTagsChange={setPendingTags}
-        input={input}
-        onInputChange={setInput}
-        foodTags={foodTags}
-      />
 
-      {savingName !== null && (
-        <div className="save-meal">
-          <span className="field-label">Name this meal</span>
-          <div className="inline-form">
-            <input
-              className="input"
-              value={savingName}
-              onChange={(e) => {
-                setSavingName(e.target.value);
-                setNameError('');
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleSaveTemplate();
-                }
-              }}
-              placeholder="e.g. Usual breakfast"
-              aria-label="Saved meal name"
-              autoFocus
-            />
-            <button type="button" className="btn btn--dark" onClick={handleSaveTemplate} disabled={!savingName.trim()}>
-              Save
-            </button>
-          </div>
-          {nameError && (
-            <p className="field-error" role="alert">
-              {nameError}
-            </p>
-          )}
-          <button type="button" className="btn btn--small" onClick={() => setSavingName(null)}>
-            Cancel
-          </button>
-        </div>
-      )}
       {savedMessage && (
         <p className="muted" role="status">
           {savedMessage}
@@ -199,10 +161,46 @@ export function FoodQuickAdd({
         >
           Save as meal
         </button>
-        <button type="submit" className="btn btn--dark" disabled={!hasTags}>
+        <button type="submit" className="btn btn--pink" disabled={!hasTags}>
           Log food
         </button>
       </div>
+
+      {savingName !== null && (
+        <Dialog title="Save as a meal" onClose={() => setSavingName(null)}>
+          <p className="dialog__body">{allTags().join(' · ')}</p>
+          <input
+            className="input dialog__input"
+            value={savingName}
+            onChange={(e) => {
+              setSavingName(e.target.value);
+              setNameError('');
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSaveTemplate();
+              }
+            }}
+            placeholder="e.g. Usual breakfast"
+            aria-label="Meal name"
+            autoFocus
+          />
+          {nameError && (
+            <p className="field-error" role="alert">
+              {nameError}
+            </p>
+          )}
+          <div className="dialog__actions">
+            <button type="button" className="btn btn--dark" onClick={handleSaveTemplate} disabled={!savingName.trim()}>
+              Save meal
+            </button>
+            <button type="button" className="btn btn--small" onClick={() => setSavingName(null)}>
+              Cancel
+            </button>
+          </div>
+        </Dialog>
+      )}
 
       {confirmingOverwrite && loaded && (
         <Dialog title={`Update “${loaded.name}”?`} onClose={() => setConfirmingOverwrite(false)}>

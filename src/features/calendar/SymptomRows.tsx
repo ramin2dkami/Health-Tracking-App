@@ -10,6 +10,9 @@ const MAX_FOOD_CHIPS = 3;
 
 const PILL_LABELS = { improving: 'Easing', worsening: 'Worse', steady: 'Steady' } as const;
 
+// Y-axis labels for the 1–5 severity scale.
+const SEVERITY_TICKS = [1, 2, 3, 4, 5];
+
 export function SymptomRows({
   summary,
   days,
@@ -110,24 +113,34 @@ function SymptomDetail({
 
   return (
     <div className="symptom-row__detail">
-      <div className={`severity-bars ${days.length >= DENSE_DAYS ? 'severity-bars--dense' : ''}`}>
-        {trend.series.map((severity, i) => (
-          <span key={days[i]} className={`severity-bars__day ${shadedDays?.has(days[i]) ? 'is-shaded' : ''}`}>
-            <span
-              className="severity-bars__bar"
-              style={{ height: `${(severity / 5) * 100}%`, background: trend.symptom.color }}
-            />
+      <div className="severity-chart">
+        <div className="severity-chart__y" aria-hidden="true">
+          {SEVERITY_TICKS.map((n) => (
+            <span key={n} style={{ bottom: `${(n / 5) * 100}%` }}>
+              {n}
+            </span>
+          ))}
+        </div>
+        <div className={`severity-bars ${days.length >= DENSE_DAYS ? 'severity-bars--dense' : ''}`}>
+          {trend.series.map((severity, i) => (
+            <span key={days[i]} className={`severity-bars__day ${shadedDays?.has(days[i]) ? 'is-shaded' : ''}`}>
+              <span
+                className="severity-bars__bar"
+                style={{ height: `${(severity / 5) * 100}%`, background: trend.symptom.color }}
+              />
+            </span>
+          ))}
+          <span className="severity-bars__avg" style={{ top: avgTop }} />
+          <span className="severity-bars__avg-label" style={{ top: avgTop }}>
+            avg {trend.avg.toFixed(1)}
           </span>
-        ))}
-        <span className="severity-bars__avg" style={{ top: avgTop }} />
-        <span className="severity-bars__avg-label" style={{ top: avgTop }}>
-          avg {trend.avg.toFixed(1)}
-        </span>
-      </div>
-      <div className="strip-axis">
-        <span>{shortDate(days[0])}</span>
-        <span>{shortDate(days[Math.floor(days.length / 2)])}</span>
-        <span>{shortDate(days[days.length - 1])}</span>
+        </div>
+        <span />
+        <div className="strip-axis">
+          <span>{shortDate(days[0])}</span>
+          <span>{shortDate(days[Math.floor(days.length / 2)])}</span>
+          <span>{shortDate(days[days.length - 1])}</span>
+        </div>
       </div>
 
       <p className="symptom-row__label">Foods linked to {trend.symptom.name}</p>

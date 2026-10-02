@@ -30,10 +30,11 @@ export function SymptomQuickAdd({
   }
 
   // Saves the symptom right away so it stays in the list even if nothing gets logged.
+  // New symptoms go first so they land just under the adder at the top.
   async function addSymptom(name: string) {
     const symptom = await findOrCreateSymptomDefinition(capitalize(name));
     if (!symptoms.some((s) => s.id === symptom.id)) {
-      setSymptoms((prev) => [...prev, symptom]);
+      setSymptoms((prev) => [symptom, ...prev]);
       bump();
     }
     // They're adding it because they have it, so start it rated.
@@ -49,6 +50,11 @@ export function SymptomQuickAdd({
 
   return (
     <form onSubmit={handleSubmit} className="form">
+      <div>
+        <span className="field-label">{symptoms.length > 0 ? 'Add a symptom' : 'What are you feeling?'}</span>
+        <SymptomAdder trackedNames={symptoms.map((s) => s.name)} onAdd={addSymptom} autoFocus={symptoms.length === 0} />
+      </div>
+
       {symptoms.length > 0 ? (
         <div>
           <div className="symptom-rates__head">
@@ -85,11 +91,6 @@ export function SymptomQuickAdd({
           </ul>
         </div>
       ) : null}
-
-      <div>
-        <span className="field-label">{symptoms.length > 0 ? 'Something else?' : 'What are you feeling?'}</span>
-        <SymptomAdder trackedNames={symptoms.map((s) => s.name)} onAdd={addSymptom} autoFocus={symptoms.length === 0} />
-      </div>
 
       <button type="submit" className="btn btn--dark btn--block" disabled={ratings.size === 0}>
         {ratings.size > 1 ? `Log ${ratings.size} symptoms` : 'Log symptom'}

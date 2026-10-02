@@ -14,6 +14,7 @@ import {
 import type { SymptomDefinition, FoodTag, MealTemplate, Profile } from '../../db/schema';
 import { loadDemoData, clearAllData, hasAnyData } from '../../db/demoData';
 import { MealTemplateManager } from '../food/MealTemplateManager';
+import { Dialog } from '../../components/Dialog';
 import { useDataVersion } from '../../data/DataVersion';
 import { goalLabel } from '../onboarding/options';
 
@@ -27,6 +28,8 @@ export function ManageScreen() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingName, setEditingName] = useState('');
   const [demoBusy, setDemoBusy] = useState(false);
+  // In-app confirm: window.confirm is silently blocked in some embedded browsers.
+  const [confirming, setConfirming] = useState<'demo' | 'clear' | null>(null);
 
   useEffect(() => {
     Promise.all([listSymptomDefinitions(), listFoodTags(), listMealTemplates(), getProfile()]).then(([s, f, t, p]) => {
@@ -72,11 +75,19 @@ export function ManageScreen() {
   }
 
   async function handleLoadDemo() {
-    if ((await hasAnyData()) && !window.confirm('Replace everything in your diary with demo data? This can’t be undone.')) return;
+    if (await hasAnyData()) setConfirming('demo');
+    else await loadDemo();
+  }
+
+  async function loadDemo() {
+    setConfirming(null);
     setDemoBusy(true);
-    await loadDemoData();
-    setDemoBusy(false);
-    refresh();
+    try {
+      await loadDemoData();
+    } finally {
+      setDemoBusy(false);
+      refresh();
+    }
   }
 
   async function handleRedoSetup() {
@@ -85,8 +96,8 @@ export function ManageScreen() {
     refresh();
   }
 
-  async function handleClearAll() {
-    if (!window.confirm('Delete everything in your diary? This can’t be undone.')) return;
+  async function clearAll() {
+    setConfirming(null);
     await clearAllData();
     refresh();
   }
@@ -210,7 +221,7 @@ export function ManageScreen() {
           dermatitis, anxiety and poor sleep. Replaces everything currently in your diary.
         </p>
         <div className="form-actions">
-          <button type="button" className="btn" onClick={handleClearAll} disabled={demoBusy}>
+          <button type="button" className="btn" onClick={() => setConfirming('clear')} disabled={demoBusy}>
             Clear all data
           </button>
           <button type="button" className="btn btn--dark" onClick={handleLoadDemo} disabled={demoBusy}>
@@ -218,6 +229,27 @@ export function ManageScreen() {
           </button>
         </div>
       </section>
+
+      {confirming && (
+        <Dialog
+          title={confirming === 'demo' ? 'Replace your diary with demo data?' : 'Delete everything in your diary?'}
+          onClose={() => setConfirming(null)}
+        >
+          <p className="dialog__body">
+            {confirming === 'demo'
+              ? 'Everything currently in your diary is replaced with 90 days of sample entries. This can’t be undone.'
+              : 'All your logs, symptoms, foods and saved meals are deleted. This can’t be undone.'}
+          </p>
+          <div className="dialog__actions">
+            <button type="button" className="btn btn--dark" onClick={confirming === 'demo' ? loadDemo : clearAll}>
+              {confirming === 'demo' ? 'Replace with demo data' : 'Delete everything'}
+            </button>
+            <button type="button" className="btn btn--small" onClick={() => setConfirming(null)}>
+              Cancel
+            </button>
+          </div>
+        </Dialog>
+      )}
     </div>
   );
 }

@@ -69,7 +69,7 @@ export function InsightsSection() {
 function TrendCard({ trend, windowDays }: { trend: TrendInsight; windowDays: InsightWindow }) {
   return (
     <div className="card">
-      <h3 className="card__title">Day score trend</h3>
+      <h3 className="card__title">Average Day Trend</h3>
       {trend.currentAvg === null ? (
         <p className="muted">Log symptoms or mood to start seeing your trend.</p>
       ) : (
@@ -113,35 +113,43 @@ function TrendCard({ trend, windowDays }: { trend: TrendInsight; windowDays: Ins
   );
 }
 
+function GlanceTile({ label, name, color, value }: { label: string; name: string; color: string; value: string }) {
+  return (
+    <div className="glance" style={{ '--tint': color } as React.CSSProperties}>
+      <span className="glance__label">{label}</span>
+      <span className="glance__dot" />
+      <strong className="glance__name">{name}</strong>
+      <span className="glance__value">{value}</span>
+    </div>
+  );
+}
+
 function SymptomSummaryCard({ summary, windowDays }: { summary: SymptomSummaryInsight; windowDays: InsightWindow }) {
+  const { mostFrequent, highestAvgSeverity } = summary;
   return (
     <div className="card">
       <h3 className="card__title">Symptoms at a glance</h3>
-      {!summary.mostFrequent ? (
+      {!mostFrequent ? (
         <p className="muted">No symptoms logged in this window.</p>
       ) : (
-        <>
-          <div className="insight-row">
-            <span className="insight-row__label">Most frequent</span>
-            <span className="insight-row__value">
-              <span className="color-dot" style={{ background: summary.mostFrequent.color }} />
-              {summary.mostFrequent.name} · {summary.mostFrequent.days} of {windowDays} days
-            </span>
-          </div>
-          <div className="insight-row">
-            <span className="insight-row__label">Most severe</span>
-            <span className="insight-row__value">
-              {summary.highestAvgSeverity ? (
-                <>
-                  <span className="color-dot" style={{ background: summary.highestAvgSeverity.color }} />
-                  {summary.highestAvgSeverity.name} · avg {summary.highestAvgSeverity.avgSeverity.toFixed(1)}/5
-                </>
-              ) : (
-                <span className="muted">needs 2+ logs</span>
-              )}
-            </span>
-          </div>
-        </>
+        <div className="glance-list">
+          <GlanceTile
+            label="Most frequent"
+            name={mostFrequent.name}
+            color={mostFrequent.color}
+            value={`${mostFrequent.days} of ${windowDays} days`}
+          />
+          {highestAvgSeverity ? (
+            <GlanceTile
+              label="Most severe"
+              name={highestAvgSeverity.name}
+              color={highestAvgSeverity.color}
+              value={`avg ${highestAvgSeverity.avgSeverity.toFixed(1)}/5`}
+            />
+          ) : (
+            <GlanceTile label="Most severe" name="Not enough logs" color="var(--line)" value="needs 2+ logs" />
+          )}
+        </div>
       )}
     </div>
   );
@@ -197,11 +205,6 @@ function TriggersCard({ data, windowDays }: { data: TriggerInsight; windowDays: 
 
 const pct = (rate: number) => `${Math.round(rate * 100)}%`;
 
-function listNames(names: string[]): string {
-  if (names.length <= 1) return names.join('');
-  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
-}
-
 function StressEffectRow({ effect, nextDay = false }: { effect: StressSymptomEffect; nextDay?: boolean }) {
   return (
     <div className="stress-effect">
@@ -228,20 +231,18 @@ function StressEffectRow({ effect, nextDay = false }: { effect: StressSymptomEff
 
 function StressMoodCard({ data, hasFoodTriggers }: { data: StressMoodInsight; hasFoodTriggers: boolean }) {
   const effects = data.sameDay.length > 0 || data.nextDay !== null;
-  const names = data.sameDay.map((e) => e.symptom.name.toLowerCase());
 
-  let headline: string;
+  // No headline when same-day bars are shown; they already say which symptoms rise with stress.
+  let headline: string | null = null;
   if (!data.canCompare) {
     headline =
       data.calmDays + data.stressedDays === 0
         ? 'Rate your stress when you log your mood to see how it affects your symptoms.'
         : `Not enough to compare yet: ${data.stressedDays} stressful and ${data.calmDays} calm days logged. Keep checking in.`;
-  } else if (names.length > 0) {
-    headline = `On stressful days, your ${listNames(names)} showed up more often.`;
-  } else if (data.nextDay) {
-    headline = `Stress seems to hit the day after, in your ${data.nextDay.symptom.name.toLowerCase()}.`;
-  } else {
-    headline = `Your symptoms don’t change much with stress.${hasFoodTriggers ? ' Food looks like the bigger factor.' : ''}`;
+  } else if (data.sameDay.length === 0) {
+    headline = data.nextDay
+      ? `Stress seems to hit the day after, in your ${data.nextDay.symptom.name.toLowerCase()}.`
+      : `Your symptoms don’t change much with stress.${hasFoodTriggers ? ' Food looks like the bigger factor.' : ''}`;
   }
 
   return (
@@ -253,7 +254,7 @@ function StressMoodCard({ data, hasFoodTriggers }: { data: StressMoodInsight; ha
           days.
         </p>
       ) : null}
-      <p className="stress-headline">{headline}</p>
+      {headline ? <p className="stress-headline">{headline}</p> : null}
 
       {data.canCompare && effects ? (
         <div className="stress-effects">

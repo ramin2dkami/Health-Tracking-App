@@ -138,6 +138,11 @@ input:focus-visible {
   color: #fff;
 }
 
+.btn--pink {
+  background: var(--pink);
+  color: var(--ink);
+}
+
 .btn--block {
   width: 100%;
   padding: 16px;
@@ -163,6 +168,11 @@ input:focus-visible {
   border-radius: 50%;
   background: rgba(20, 20, 20, 0.06);
   color: inherit;
+}
+
+.icon-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
 .icon-btn--small {
@@ -289,12 +299,14 @@ input:focus-visible {
   margin-top: 4px;
 }
 
+.home__back {
+  margin-top: 10px;
+}
+
 /* ---------- Log nudge ---------- */
 
 .nudge {
   margin-top: 20px;
-  background: var(--dark);
-  color: #fff;
 }
 
 .nudge__title {
@@ -303,38 +315,9 @@ input:focus-visible {
 }
 
 .nudge__body {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--muted);
   font-size: 14px;
   margin-bottom: 14px;
-}
-
-.nudge__actions {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-
-.nudge__action {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 12px 6px;
-  border: none;
-  border-radius: 18px;
-  background: var(--dark-2);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.nudge__icon {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  color: var(--ink);
 }
 
 /* ---------- Blobs & highlights ---------- */
@@ -451,14 +434,28 @@ button.blob:active {
   padding: 14px 8px;
 }
 
+.week--flat {
+  margin-top: 0;
+  padding: 0;
+  background: none;
+}
+
 .week__day {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+  padding: 6px 0;
   background: none;
-  border: none;
-  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 16px;
+}
+
+.week__today {
+  min-height: 16px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
 }
 
 .week__label {
@@ -470,6 +467,7 @@ button.blob:active {
 .week__dot {
   width: 38px;
   height: 38px;
+  background: rgba(20, 20, 20, 0.06);
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -477,13 +475,20 @@ button.blob:active {
   font-weight: 700;
 }
 
-.week__day.is-today .week__label {
-  color: var(--ink);
+/* The day shown in the hero is outlined and filled in the app's primary pink. */
+.week__day.is-selected {
+  border-color: var(--pink);
 }
 
-.week__day.is-today .week__dot {
-  box-shadow: 0 0 0 2px var(--ink);
+.week__day.is-selected .week__dot {
+  background: var(--pink);
 }
+
+.week__day:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 
 /* ---------- Sheets ---------- */
 
@@ -647,6 +652,21 @@ button.blob:active {
   width: auto;
   min-width: 0;
   padding: 8px 12px;
+}
+
+.input-action {
+  position: relative;
+}
+
+.input-action .input {
+  padding-right: 76px;
+}
+
+.input-action__btn {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
 }
 
 .inline-form {
@@ -886,17 +906,6 @@ button.blob:active {
   font-weight: 600;
 }
 
-.save-meal {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-}
-
-.save-meal .inline-form {
-  width: 100%;
-}
-
 .form-actions {
   display: grid;
   grid-template-columns: 1fr 1.4fr;
@@ -935,6 +944,10 @@ button.blob:active {
   color: var(--muted);
   font-size: 14px;
   margin-top: 8px;
+}
+
+.dialog__input {
+  margin-top: 14px;
 }
 
 .dialog__actions {
@@ -1083,49 +1096,6 @@ button.blob:active {
 
 /* ---------- Trends ---------- */
 
-.heatmap {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 6px;
-}
-
-.heatmap__weekday {
-  text-align: center;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 600;
-  padding-bottom: 2px;
-}
-
-.heatmap__cell {
-  aspect-ratio: 1;
-  border: none;
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ink);
-}
-
-.heatmap__cell.is-today {
-  box-shadow: inset 0 0 0 2px var(--ink);
-}
-
-.legend {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin-top: 14px;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.legend__swatch {
-  width: 16px;
-  height: 16px;
-  border-radius: 5px;
-}
-
 .insights__head {
   align-items: center;
   margin-bottom: 16px;
@@ -1179,48 +1149,63 @@ button.blob:active {
   color: var(--pink-strong);
 }
 
-.insight-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--line);
-}
-
-.insight-row:first-of-type {
-  padding-top: 0;
-}
-
-.insight-row:last-of-type {
-  border-bottom: none;
-}
-
-.insight-row__label {
+/* Symptoms at a glance: one tile per stat, tinted with the symptom's own color via --tint. */
+.glance-list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  font-size: 15px;
-  min-width: 0;
+  gap: 10px;
 }
 
-.insight-row__label:not(:has(strong)) {
-  color: var(--muted);
-  font-size: 14px;
-}
-
-.insight-row__hint {
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.insight-row__value {
-  display: inline-flex;
+/* The dot sits on the name's row, under an empty cell beside the label. */
+.glance {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    '. label value'
+    'dot name value';
   align-items: center;
-  gap: 6px;
-  font-size: 14px;
+  gap: 2px 10px;
+  padding: 14px;
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--tint) 12%, #fff);
+  border: 1px solid color-mix(in srgb, var(--tint) 28%, transparent);
+}
+
+.glance__dot {
+  grid-area: dot;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--tint);
+}
+
+.glance__label {
+  grid-area: label;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.glance__name {
+  grid-area: name;
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.glance__value {
+  grid-area: value;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Fixed width so the dividers line up across tiles. */
+  min-width: 108px;
+  padding-left: 12px;
+  border-left: 1px solid color-mix(in srgb, var(--tint) 35%, transparent);
+  font-size: 15px;
   font-weight: 600;
-  text-align: right;
   white-space: nowrap;
 }
 
@@ -1695,6 +1680,28 @@ button.blob:active {
   background: none;
 }
 
+/* Y-axis column beside the bars; the empty second-row cell keeps the date axis under the bars. */
+.severity-chart {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  column-gap: 6px;
+}
+
+.severity-chart__y {
+  position: relative;
+  height: 120px;
+}
+
+.severity-chart__y span {
+  position: absolute;
+  right: 0;
+  transform: translateY(50%);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+
 .severity-bars {
   position: relative;
   height: 120px;
@@ -1702,6 +1709,8 @@ button.blob:active {
   align-items: flex-end;
   gap: 2px;
   border-bottom: 1px solid var(--line);
+  /* Faint gridline at each severity level (120px / 5). */
+  background: repeating-linear-gradient(to top, transparent 0 23px, rgba(20, 20, 20, 0.06) 23px 24px);
 }
 
 .severity-bars--dense {

@@ -1,8 +1,4 @@
-import { Icon } from '../../components/Icon';
-import { ADD_OPTIONS, type AddMode } from '../add/addOptions';
-
-// Mood first: a quick check-in is the easiest way to start the day's log.
-const NUDGE_ORDER: AddMode[] = ['mood', 'food', 'symptom'];
+import type { AddMode } from '../add/addOptions';
 
 function nudgeMessage(streak: number, daysSinceLast: number | null): { title: string; body: string } {
   if (streak >= 2) {
@@ -33,22 +29,14 @@ export function LogNudge({
   onAdd: (mode: AddMode) => void;
 }) {
   const { title, body } = nudgeMessage(streak, daysSinceLast);
-  const options = NUDGE_ORDER.map((mode) => ADD_OPTIONS.find((o) => o.mode === mode)!);
 
   return (
     <section className="card nudge" aria-label="Log today">
       <h2 className="nudge__title">{title}</h2>
       <p className="nudge__body">{body}</p>
-      <div className="nudge__actions">
-        {options.map((o) => (
-          <button key={o.mode} type="button" className="nudge__action" onClick={() => onAdd(o.mode)}>
-            <span className="nudge__icon" style={{ background: o.color }}>
-              <Icon name={o.icon} size={18} />
-            </span>
-            {o.label}
-          </button>
-        ))}
-      </div>
+      <button type="button" className="btn btn--pink btn--block" onClick={() => onAdd('menu')}>
+        Log today
+      </button>
     </section>
   );
 }

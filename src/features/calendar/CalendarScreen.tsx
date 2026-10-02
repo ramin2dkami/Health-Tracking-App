@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CalendarHeatmap } from './CalendarHeatmap';
+import { WeekStrip } from '../../components/WeekStrip';
 import { DayDetailModal } from './DayDetailModal';
 import { TrendHighlights } from './TrendHighlights';
 import { SymptomRows } from './SymptomRows';
 import { summarizeTrends } from './summarizeTrends';
 import { summarizeEnergy } from './summarizeEnergy';
-import { aggregateMaxSeverityByDay } from './aggregateSeverity';
-import { SEVERITY_COLORS } from './severityColors';
 import {
   listSymptomDefinitions,
   listSymptomLogsInRange,
@@ -14,7 +12,7 @@ import {
   listFoodTags,
   listMoodLogsInRange,
 } from '../../db/repository';
-import { toDateKey, dateKeysBetween } from '../../db/dateKey';
+import { toDateKey, todayKey, dateKeysBetween, startOfWeek } from '../../db/dateKey';
 import type { FoodLog, FoodTag, MoodLog, SymptomDefinition, SymptomLog } from '../../db/schema';
 import { useDataVersion } from '../../data/DataVersion';
 import { Icon } from '../../components/Icon';
@@ -26,10 +24,6 @@ const RANGE_OPTIONS = [
   { label: '90D', days: 90 },
   { label: 'All', days: ALL_TIME },
 ];
-
-function startOfWeek(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate() - date.getDay());
-}
 
 function addDays(date: Date, days: number): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
@@ -43,7 +37,6 @@ function rangeStartKey(days: number): string {
 export function CalendarScreen() {
   const { version } = useDataVersion();
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
-  const [severityByDay, setSeverityByDay] = useState<Map<string, number>>(new Map());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [symptoms, setSymptoms] = useState<SymptomDefinition[]>([]);
   const [filterSymptomId, setFilterSymptomId] = useState<number | 'all'>('all');
@@ -57,14 +50,6 @@ export function CalendarScreen() {
     listSymptomDefinitions().then(setSymptoms);
     listFoodTags().then(setFoodTags);
   }, [version]);
-
-  useEffect(() => {
-    const start = toDateKey(weekStart);
-    const end = toDateKey(addDays(weekStart, 6));
-    aggregateMaxSeverityByDay(start, end, filterSymptomId === 'all' ? undefined : filterSymptomId).then(
-      setSeverityByDay,
-    );
-  }, [weekStart, filterSymptomId, version]);
 
   useEffect(() => {
     const start = rangeStartKey(rangeDays);
@@ -101,7 +86,9 @@ export function CalendarScreen() {
     [days, rangeMoodLogs, summary],
   );
 
-  const weekEnd = addDays(weekStart, 6);
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const weekEnd = weekDays[6];
+  const isCurrentWeek = toDateKey(weekStart) === toDateKey(startOfWeek());
   const weekLabel = `${weekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${weekEnd.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
 
   return (
@@ -142,18 +129,17 @@ export function CalendarScreen() {
             <Icon name="chevronLeft" />
           </button>
           <h2>{weekLabel}</h2>
-          <button type="button" className="icon-btn" onClick={() => setWeekStart((w) => addDays(w, 7))} aria-label="Next week">
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={() => setWeekStart((w) => addDays(w, 7))}
+            disabled={isCurrentWeek}
+            aria-label="Next week"
+          >
             <Icon name="chevronRight" />
           </button>
         </div>
-        <CalendarHeatmap weekStart={weekStart} severityByDay={severityByDay} onSelectDay={setSelectedDate} />
-        <div className="legend" aria-label="Worst symptom severity scale">
-          <span>None</span>
-          {SEVERITY_COLORS.map((c, i) => (
-            <span key={c} className="legend__swatch" style={{ background: c }} title={i ? `Severity ${i}` : 'No symptoms'} />
-          ))}
-          <span>Severe</span>
-        </div>
+        <WeekStrip week={weekDays} selectedKey={selectedDate ?? todayKey()} onSelect={setSelectedDate} flat />
       </section>
 
       <section className="trends">
