@@ -14,6 +14,22 @@ const ENERGY_TITLES = {
   steady: 'Your energy is holding steady',
 } as const;
 
+const ENERGY_TRENDS = { improving: 'picking up', worsening: 'dipping', steady: 'holding steady' } as const;
+
+// Energy gaps (on the 1–5 scale) smaller than this read as "no real difference" on flare-up days.
+const ENERGY_GAP = 0.3;
+
+/** Headline for the flare comparison: the size of the gap, not the overall trend, is the finding. */
+function energyFlareTitle(flareAvg: number, otherAvg: number): string {
+  const gap = otherAvg - flareAvg;
+  if (gap >= ENERGY_GAP) {
+    const points = Number(gap.toFixed(1));
+    return `Flare-ups drain about ${points} ${points === 1 ? 'point' : 'points'} of your energy`;
+  }
+  if (gap <= -ENERGY_GAP) return 'Your energy is higher on flare-up days';
+  return 'Your energy holds up on flare-up days';
+}
+
 export function TrendHighlights({
   summary,
   energy,
@@ -105,16 +121,42 @@ export function TrendHighlights({
             <h3 className="highlight__title">No energy check-ins yet</h3>
             <p className="highlight__body">Rate your energy when you log mood &amp; stress to see it here.</p>
           </>
+        ) : energy.flareAvg !== null && energy.otherAvg !== null ? (
+          <>
+            <h3 className="highlight__title">{energyFlareTitle(energy.flareAvg, energy.otherAvg)}</h3>
+            <div className="trigger-compare">
+              <span>{summary.trends.length === 1 ? `Days ${top.symptom.name} hit 4–5` : 'Flare-up days'}</span>
+              <span className="trigger-compare__track">
+                <span
+                  className="trigger-compare__fill"
+                  style={{ width: `${(energy.flareAvg / 5) * 100}%`, background: ENERGY_COLOR }}
+                />
+              </span>
+              <span className="trigger-compare__value">{energy.flareAvg.toFixed(1)}</span>
+              <span>Other days</span>
+              <span className="trigger-compare__track">
+                <span
+                  className="trigger-compare__fill trigger-compare__fill--other"
+                  style={{ width: `${(energy.otherAvg / 5) * 100}%` }}
+                />
+              </span>
+              <span className="trigger-compare__value">{energy.otherAvg.toFixed(1)}</span>
+            </div>
+            <Sparkline values={energy.series} color={ENERGY_COLOR} className="highlight__spark" area />
+            <p className="highlight__note">
+              Avg {energy.avg.toFixed(1)}/5 across {energy.daysLogged}{' '}
+              {energy.daysLogged === 1 ? 'check-in' : 'check-ins'}
+              {energy.direction ? ` · ${ENERGY_TRENDS[energy.direction]}` : ''}
+            </p>
+          </>
         ) : (
           <>
             <h3 className="highlight__title">
               {energy.direction ? ENERGY_TITLES[energy.direction] : `Energy averages ${energy.avg.toFixed(1)}/5`}
             </h3>
             <p className="highlight__body">
-              Avg {energy.avg.toFixed(1)}/5 across {energy.daysLogged} {energy.daysLogged === 1 ? 'check-in' : 'check-ins'}.
-              {energy.flareAvg !== null && energy.otherAvg !== null
-                ? ` On ${summary.trends.length === 1 ? `days ${top.symptom.name} hit 4 or 5` : 'flare-up days'} it averages ${energy.flareAvg.toFixed(1)}, vs ${energy.otherAvg.toFixed(1)} on other days.`
-                : ''}
+              Avg {energy.avg.toFixed(1)}/5 across {energy.daysLogged}{' '}
+              {energy.daysLogged === 1 ? 'check-in' : 'check-ins'}.
             </p>
             <Sparkline values={energy.series} color={ENERGY_COLOR} className="highlight__spark" area />
           </>
